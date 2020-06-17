@@ -315,11 +315,7 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::accept() {
     char buf[512];
     ret = SSL_accept(ssl);
     if (SSL_get_shared_ciphers(ssl,buf,sizeof buf) != NULL)
-#ifdef DEBUG
-       DPRINTF("Shared ciphers:%s",buf);
-#else
-       { /* do nothing */ }
-#endif
+	DPRINTF("Shared ciphers:%s",buf);
     if (ret==1) {
 	state = CONNECTED;
 	DPRINTF("SSL_accept() succeeded.");
@@ -355,19 +351,14 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::accept() {
 }
 
 void IpfixReceiverDtlsUdpIpV4::DtlsConnection::shutdown() {
-    int ret;
-#ifdef DEBUG
-    int error;
-#endif
+    int ret, error;
     ret = SSL_shutdown(ssl);
     if (ret == 0) {
 	DPRINTF("Calling SSL_shutdown a second time.");
 	ret = SSL_shutdown(ssl);
     }
-#ifdef DEBUG    
     error = SSL_get_error(ssl,ret);
     DPRINTF("SSL_shutdown() returned: %d, error: %d, strerror: %s",ret,error,strerror(errno));
-#endif
     state = SHUTDOWN;
 }
 

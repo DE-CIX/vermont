@@ -133,6 +133,119 @@ int parseProtoPattern(char* s, IpfixRecord::Data** fdata, InformationElement::Ie
 	return 0;
 }
 
+
+void hex2bin(uint8_t* dest, char* src){
+	*dest = 0;
+
+	if (src[1] == '1')
+		*dest += 1;
+	else if (src[1] == '2')
+		*dest += 2;
+	else if (src[1] == '3')
+		*dest += 3;
+	else if (src[1] == '4')
+		*dest += 4;
+	else if (src[1] == '5')
+		*dest += 5;
+	else if (src[1] == '6')
+		*dest += 6;
+	else if (src[1] == '7')
+		*dest += 7;
+	else if (src[1] == '8')
+		*dest += 8;
+	else if (src[1] == '9')
+		*dest += 9;
+	else if (src[1] == 'a')
+		*dest += 10;
+	else if (src[1] == 'b')
+		*dest += 11;
+	else if (src[1] == 'c')
+		*dest += 12;
+	else if (src[1] == 'd')
+		*dest += 13;
+	else if (src[1] == 'e')
+		*dest += 14;
+	else if (src[1] == 'f')		//do not just use 'else', since src[1] can still be '0'. In this case we want to leave *dest untouched
+		*dest += 15;
+
+	if (src[0] == '1')
+		*dest += 16;
+	else if (src[0] == '2')
+		*dest += 32;
+	else if (src[0] == '3')
+		*dest += 48;
+	else if (src[0] == '4')
+		*dest += 64;
+	else if (src[0] == '5')
+		*dest += 80;
+	else if (src[0] == '6')
+		*dest += 96;
+	else if (src[0] == '7')
+		*dest += 112;
+	else if (src[0] == '8')
+		*dest += 128;
+	else if (src[0] == '9')
+		*dest += 144;
+	else if (src[0] == 'a')
+		*dest += 160;
+	else if (src[0] == 'b')
+		*dest += 176;
+	else if (src[0] == 'c')
+		*dest += 192;
+	else if (src[0] == 'd')
+		*dest += 208;
+	else if (src[0] == 'e')
+		*dest += 224;
+	else if (src[0] == 'f')		//same goes for src[0]. See comment above.
+		*dest += 240;
+}
+
+
+/**
+ * parses the given string
+ * @return 0 if successful
+ */
+int parseMacAddressPattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length) {
+
+	char* octet0 = get_next_token(&s, ":");
+	char* octet1 = get_next_token(&s, ":");
+	char* octet2 = get_next_token(&s, ":");
+	char* octet3 = get_next_token(&s, ":");
+	char* octet4 = get_next_token(&s, ":");
+	char* octet5 = get_next_token(&s, ":");
+
+	if (!octet5){
+		return -1;
+	}
+
+	uint8_t byte0 = 0;
+	uint8_t byte1 = 0;
+	uint8_t byte2 = 0;
+	uint8_t byte3 = 0;
+	uint8_t byte4 = 0;
+	uint8_t byte5 = 0;
+
+	hex2bin(&byte0, octet0);
+	hex2bin(&byte1, octet1);
+	hex2bin(&byte2, octet2);
+	hex2bin(&byte3, octet3);
+	hex2bin(&byte4, octet4);
+	hex2bin(&byte5, octet5);
+
+	*length = 6;
+
+	*fdata = (IpfixRecord::Data*) malloc (sizeof(char) * *length);
+
+	memcpy(&(*fdata)[0], &byte0, 1);
+	memcpy(&(*fdata)[1], &byte1, 1);
+	memcpy(&(*fdata)[2], &byte2, 1);
+	memcpy(&(*fdata)[3], &byte3, 1);
+	memcpy(&(*fdata)[4], &byte4, 1);
+	memcpy(&(*fdata)[5], &byte5, 1);
+
+	return 0;
+}
+
 /**
  * parses the given string
  * @return 0 if successful

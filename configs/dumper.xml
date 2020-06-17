@@ -1,0 +1,124 @@
+<ipfixConfig>
+
+	<sensorManager id="99">
+		<checkinterval>2</checkinterval>
+	</sensorManager>
+
+	<ipfixCollector id="2">
+		<listener>
+			<ipAddress>12.8.60.45</ipAddress>
+			<transportProtocol>UDP</transportProtocol>
+			<port>2055</port>
+		</listener>
+		<udpTemplateLifetime>300</udpTemplateLifetime>
+	<next>4</next>
+	</ipfixCollector>
+
+
+	<ipfixQueue id="4">
+		<entries>25000</entries>
+		<next>5</next>
+	</ipfixQueue>
+
+	<ipfixAggregator id="5">
+        <rule>
+                <templateId>306</templateId>
+                <flowKey>
+                        <ieName>sourceMacAddress</ieName>
+                </flowKey>
+                <flowKey>
+                        <ieName>destinationMacAddress</ieName>
+                </flowKey>
+                <flowKey>
+                        <ieName>sourceIPv4Address</ieName>
+                </flowKey>
+                <flowKey>
+                        <ieName>destinationIPv4Address</ieName>
+                </flowKey>
+                <flowKey>
+                        <ieName>protocolIdentifier</ieName>
+                </flowKey>
+                <flowKey>
+                        <ieName>sourceTransportPort</ieName>
+                </flowKey>
+                <flowKey>
+                        <ieName>destinationTransportPort</ieName>
+                </flowKey>
+                <nonFlowKey>
+                        <ieName>flowStartMilliSeconds</ieName>
+                </nonFlowKey>
+                <nonFlowKey>
+                        <ieName>flowEndMilliSeconds</ieName>
+                </nonFlowKey>
+                <nonFlowKey>
+                        <ieName>octetDeltaCount</ieName>
+                </nonFlowKey>
+                <nonFlowKey>
+                        <ieName>packetDeltaCount</ieName>
+                </nonFlowKey>
+                <nonFlowKey>
+                        <ieName>tcpControlBits</ieName>
+                </nonFlowKey>
+        </rule>
+        <rule>
+                <templateId>1910</templateId>
+                <flowKey>
+                        <ieName>sourceMacAddress</ieName>
+                </flowKey>
+                <flowKey>
+                        <ieName>destinationMacAddress</ieName>
+                </flowKey>
+                <flowKey>
+                        <ieName>sourceIPv4Address</ieName>
+                </flowKey>
+                <flowKey>
+                        <ieName>destinationIPv4Address</ieName>
+                </flowKey>
+                <flowKey>
+                        <ieName>protocolIdentifier</ieName>
+                </flowKey>
+                <flowKey>
+                        <ieName>sourceTransportPort</ieName>
+                </flowKey>
+                <flowKey>
+                        <ieName>destinationTransportPort</ieName>
+                </flowKey>
+                <nonFlowKey>
+                        <ieName>flowStartMilliSeconds</ieName>
+                </nonFlowKey>
+                <nonFlowKey>
+                        <ieName>flowEndMilliSeconds</ieName>
+                </nonFlowKey>
+                <nonFlowKey>
+                        <ieName>octetDeltaCount</ieName>
+                </nonFlowKey>
+                <nonFlowKey>
+                        <ieName>packetDeltaCount</ieName>
+                </nonFlowKey>
+                <nonFlowKey>
+                        <ieName>tcpControlBits</ieName>
+                </nonFlowKey>
+        </rule>
+        <expiration>
+                <inactiveTimeout unit="sec">3</inactiveTimeout>
+                <activeTimeout unit="sec">8</activeTimeout>
+        </expiration>
+        <pollInterval unit="msec">100</pollInterval>
+        <next>6</next>
+        </ipfixAggregator>
+
+
+        <ipfixQueue id="6">
+                <entries>25000</entries>
+                <next>7</next>
+        </ipfixQueue>
+
+	<ipfixFileWriter id="7">
+		<observationDomainId>10</observationDomainId>
+		<maximumFilesize>7000</maximumFilesize>
+		<destinationPath>/tmp/ipfix_dump</destinationPath> 
+		<filenamePrefix>ipfix_dump</filenamePrefix>
+	</ipfixFileWriter> 
+
+
+</ipfixConfig>

@@ -1,0 +1,81 @@
+<ipfixConfig>
+
+	<ipfixReceiverFile id="3">
+		<packetFileDirectory>/tmp/ipfix_dump</packetFileDirectory>
+		<packetFileBasename>ipfix_dump</packetFileBasename>
+		<ignoreTimestamps>true</ignoreTimestamps>
+		<from>6</from>
+		<to>6</to>
+		<next>4</next>
+	</ipfixReceiverFile>
+
+	<ipfixQueue id="4">
+		<entries>400</entries>
+		<next>6</next>
+	</ipfixQueue>
+
+	<ipfixAggregator id="6">
+	<rule>
+		<templateId>1910</templateId>
+		<flowKey>
+			<ieName>sourceMacAddress</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>destinationMacAddress</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>sourceIPv4Address</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>destinationIPv4Address</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>sourceIPv6Address</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>destinationIPv6Address</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>protocolIdentifier</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>sourceTransportPort</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>destinationTransportPort</ieName>
+		</flowKey>
+		<nonFlowKey>
+			<ieName>flowStartMilliSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>flowEndMilliSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>octetDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>packetDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>tcpControlBits</ieName>
+		</nonFlowKey>
+	</rule>
+	<expiration>
+		<inactiveTimeout unit="sec">3</inactiveTimeout>
+		<activeTimeout unit="sec">8</activeTimeout>
+	</expiration>
+	<pollInterval unit="msec">100</pollInterval>
+	<next>5</next>
+	</ipfixAggregator>
+
+
+	<ipfixQueue id="5">
+		<entries>200</entries>
+		<next>8</next>
+	</ipfixQueue>
+
+	<ipfixPrinter id="8">
+		<outputType>line</outputType>
+	</ipfixPrinter>
+
+</ipfixConfig>

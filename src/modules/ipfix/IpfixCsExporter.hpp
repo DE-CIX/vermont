@@ -111,9 +111,13 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 			uint16_t record_length;                 // total length of this record minus length of this element
 			uint8_t  src_export_mode;               // expected to match enum cs_export_mode
 			uint8_t  dst_export_mode;               // expected to match enum cs_export_mode
-			uint8_t  ipversion;                     // expected 4 (for now)
+			uint8_t  ipversion;                     // expected 4
 			uint32_t source_ipv4_address;
 			uint32_t destination_ipv4_address;
+			uint64_t source_ipv6_address_upper;	//upper 64 bits of ipv6 source address
+			uint64_t source_ipv6_address_lower;	//lower 64 bits of ipv6 source address
+			uint64_t destination_ipv6_address_upper;//upper 64 bits of ipv6 destination address
+			uint64_t destination_ipv6_address_lower;//lower 64 bits of ipv6 destination address
 			uint8_t  protocol_identifier;
 			uint16_t source_transport_port;         // encode udp/tcp ports here
 			uint16_t destination_transport_port;    // encode udp/tcp ports here

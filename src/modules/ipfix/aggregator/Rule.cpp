@@ -220,6 +220,7 @@ int matchesPortPattern(const InformationElement::IeInfo* dataType, const IpfixRe
  */
 int matchesIPv4Pattern(const InformationElement::IeInfo* dataType, const IpfixRecord::Data* data, const InformationElement::IeInfo* patternType, const IpfixRecord::Data* pattern) {
 	/* Get (inverse!) Network Masks */
+
 	int dmaski = getIPv4IMask(dataType, data);
 	int pmaski = getIPv4IMask(patternType, pattern);
 
@@ -231,6 +232,23 @@ int matchesIPv4Pattern(const InformationElement::IeInfo* dataType, const IpfixRe
 
 	return ((daddr >> pmaski) == (paddr >> pmaski));
 }
+
+/**
+ * Checks if an incoming MAC address matches the configured MAC address matching criterion
+ * @return 1 if destination MAC addresses match
+ */
+int matchesDestinationMacAddressPattern(const InformationElement::IeInfo* dataType, const IpfixRecord::Data* data, const InformationElement::IeInfo* patternType, const IpfixRecord::Data* pattern) {
+	return (!memcmp(&data[0], pattern, 6));
+}
+
+/**
+ * Checks if an incoming MAC address matches the configured MAC address matching criterion
+ * @return 1 if source MAC addresses match
+ */
+int matchesSourceMacAddressPattern(const InformationElement::IeInfo* dataType, const IpfixRecord::Data* data, const InformationElement::IeInfo* patternType, const IpfixRecord::Data* pattern) {
+	return (!memcmp(&data[0], pattern, 6));
+}
+
 
 /**
  * Checks if a given Field matches a Pattern when compared byte for byte
@@ -245,7 +263,7 @@ int matchesRawPattern(const InformationElement::IeInfo* dataType, const IpfixRec
 	//for (i = 0; i < dataType->length; i++) if (data[i] != pattern[i]) return 0;
 	//return 1;
 
-	return (memcmp(data, pattern, dataType->length) == 0);
+	return (memcmp(data, pattern, dataType->length) != 0);
 
 }
 
@@ -274,6 +292,14 @@ int matchesPattern(const InformationElement::IeInfo* dataType, const IpfixRecord
 	case IPFIX_TYPEID_sourceIPv4Address:
 	case IPFIX_TYPEID_destinationIPv4Address: {
 		return matchesIPv4Pattern(dataType, data, patternType, pattern);
+		break;
+	}
+	case IPFIX_TYPEID_sourceMacAddress:{
+		return matchesSourceMacAddressPattern(dataType, data, patternType, pattern);
+		break;
+	}
+	case IPFIX_TYPEID_destinationMacAddress: {
+		return matchesDestinationMacAddressPattern(dataType, data, patternType, pattern);
 		break;
 	}
 	case IPFIX_TYPEID_sourceTransportPort:
@@ -313,7 +339,7 @@ bool Rule::ExptemplateDataMatches(const Packet* p)
 					fi.type.length = 4;
 					fi.offset = 12;
 
-					uint8_t dmaski = 0; // no host identification part in IP adress
+					uint8_t dmaski = 0; // no host identification part in IP address
 					int pmaski = getIPv4IMask(&ruleField->type, ruleField->pattern);
 
 					if (dmaski > pmaski) return false;

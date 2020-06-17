@@ -52,6 +52,10 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr,
 	struct sockaddr_in serverAddress;
 
 	listen_socket = socket(AF_INET, SOCK_DGRAM, 0);
+	char foo[5];
+	strncpy(foo, "eth1\0", 5);
+	char* nic = &foo[0];
+	setsockopt(listen_socket, SOL_SOCKET, SO_BINDTODEVICE, nic, 5);
 	if(listen_socket < 0) {
 		/* ASK: error should be written to log file */
 		perror("Could not create socket");
@@ -71,8 +75,7 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr,
 	
 	serverAddress.sin_family = AF_INET;
 	serverAddress.sin_port = htons(port);
-	if(bind(listen_socket, (struct sockaddr*)&serverAddress, 
-		sizeof(struct sockaddr_in)) < 0) {
+	if(bind(listen_socket, (struct sockaddr*)&serverAddress, sizeof(struct sockaddr_in)) < 0) {
 		perror("Could not bind socket");
 		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4 %s:%d",ipAddr.c_str(), port );
 	}
@@ -82,6 +85,8 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr,
 	msg(MSG_INFO, "UDP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
 								port, 
 								listen_socket);
+	char buf[1500] = "";
+	read(listen_socket, buf, 1500);
 }
 
 

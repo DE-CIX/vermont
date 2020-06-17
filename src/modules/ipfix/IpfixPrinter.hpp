@@ -23,17 +23,17 @@
 
 
 #include "core/Module.h"
-#include "common/Time.h"
 #include "IpfixRecordDestination.h"
 
 class PrintHelpers
 {
 	public:
 		PrintHelpers() : fh(stdout) {}
-
+		void reverse(unsigned short* b);
 		void printFieldData(InformationElement::IeInfo type, IpfixRecord::Data* pattern);
 		void printIPv4(uint32_t data);
 		void printIPv4(InformationElement::IeInfo type, IpfixRecord::Data* data);
+		void printIPv6(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		void printPort(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		void printProtocol(uint8_t data);
 		void printProtocol(InformationElement::IeInfo type, IpfixRecord::Data* data);
@@ -44,7 +44,6 @@ class PrintHelpers
 
 	protected:
 		FILE* fh;
-		ntp64 u64_to_ntp64(const uint64_t &number);
 };
 
 /**

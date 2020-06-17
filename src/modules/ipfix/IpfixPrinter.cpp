@@ -20,6 +20,7 @@
  */
 
 #include "IpfixPrinter.hpp"
+#include "common/Time.h"
 #include "common/Misc.h"
 #include "Connection.h"
 
@@ -58,6 +59,48 @@ void PrintHelpers::printIPv4(InformationElement::IeInfo type, IpfixRecord::Data*
 		fprintf(fh, "%u.%u.%u.%u/%u", octet1, octet2, octet3, octet4, 32-imask);
 	} else {
 		fprintf(fh, "%u.%u.%u.%u", octet1, octet2, octet3, octet4);
+	}
+}
+
+void PrintHelpers::reverse(unsigned short* b){
+	unsigned short ret = 0;		//return value
+	unsigned char bak = 0;		//backup value
+	unsigned char* cur = 0;		//pointer for accessing bits
+	cur = (unsigned char*) b;
+	bak = *b;
+	*cur = *(cur + 1);
+	*((unsigned char*)(cur + 1)) = bak;
+	return;
+}
+
+void PrintHelpers::printIPv6(InformationElement::IeInfo type, IpfixRecord::Data* data) {
+	unsigned short part0 = 0;
+	unsigned short part1 = 0;
+	unsigned short part2 = 0;
+	unsigned short part3 = 0;
+	unsigned short part4 = 0;
+	unsigned short part5 = 0;
+	unsigned short part6 = 0;
+	unsigned short part7 = 0;
+	unsigned short imask = 0;
+	if (type.length >= 1) part0 = data[0];
+	if (type.length >= 2) part1 = data[1];
+	if (type.length >= 3) part2 = data[2];
+	if (type.length >= 4) part3 = data[3];
+	if (type.length >= 5) part4 = data[4];
+	if (type.length >= 6) part5 = data[5];
+	if (type.length >= 7) part6 = data[6];
+	if (type.length >= 8) part7 = data[7];
+	if (type.length >= 9) imask = data[8];
+	if (type.length > 9) {
+		DPRINTF("IPv6 Address with length %u unparseable\n", type.length);
+		return;
+	}
+
+	if (type.length == 9 /*&& (imask != 0)*/) {
+		fprintf(fh, "%x:%x:%x:%x:%x:%x:%x:%x/%u", part0, part1, part2, part3, part4, part5, part6, part7, 32-imask);
+	} else {
+		fprintf(fh, "%x:%x:%x:%x:%x:%x:%x:%x", part0, part1, part2, part3, part4, part5, part6, part7);
 	}
 }
 
@@ -249,6 +292,12 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 				case IPFIX_TYPEID_destinationIPv4Address:
 					printIPv4(type, pattern);
 					return;
+				case IPFIX_TYPEID_sourceIPv6Address:
+					printIPv6(type, pattern);
+					return;
+				case IPFIX_TYPEID_destinationIPv6Address:
+					printIPv6(type, pattern);
+					return;
 				case IPFIX_TYPEID_sourceTransportPort:
 					printPort(type, pattern);
 					return;
@@ -266,7 +315,7 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 				case IPFIX_TYPEID_flowEndNanoseconds:
 					hbnum = ntohll(*(uint64_t*)pattern);
 					if (hbnum>0) {
-						t = timentp64(u64_to_ntp64(hbnum));
+						t = timentp64(*((ntp64*)(&hbnum)));
 						fprintf(fh, "%u.%06d seconds", (int32_t)t.tv_sec, (int32_t)t.tv_usec);
 					} else {
 						fprintf(fh, "no value (only zeroes in field)");
@@ -288,7 +337,7 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 				case IPFIX_TYPEID_flowEndNanoseconds:
 					hbnum = ntohll(*(uint64_t*)pattern);
 					if (hbnum>0) {
-						t = timentp64(u64_to_ntp64(hbnum));
+						t = timentp64(*((ntp64*)(&hbnum)));
 						fprintf(fh, "%u.%06d seconds", (int32_t)t.tv_sec, (int32_t)t.tv_usec);
 					} else {
 						fprintf(fh, "no value (only zeroes in field)");
@@ -322,20 +371,6 @@ void PrintHelpers::printFrontPayload(InformationElement::IeInfo type, IpfixRecor
 	fprintf(fh, "'");
 }
 
-/**
- * Converts an u64 value to ntp64
- * Attention: little endianess is assumed
- * @param number The u64 value to be converted
- * @return The value in ntp64 format
- */
-ntp64 PrintHelpers::u64_to_ntp64(const uint64_t &number)
-{
-	ntp64 ntp64_number;
-	ntp64_number.lower = (uint32_t)( number & 0x00000000FFFFFFFFull );
-	ntp64_number.upper = (uint32_t)( (uint64_t)(number & 0xFFFFFFFF00000000ull) >> 32 );
-
-	return ntp64_number;
-}
 
 /**
  * Creates a new IpfixPrinter. Do not forget to call @c startIpfixPrinter() to begin printing
@@ -367,7 +402,7 @@ IpfixPrinter::IpfixPrinter(OutputType outputtype, string filename)
 	}
 
 	if (outputtype==TABLE)
-		fprintf(fh, "srcip\tdstip\tsrcport\tdstport\tprot\tsrcpkts\tdstpkts\tsrcoct\tdstoct\tsrcstart\tsrcend\tdststart\tdstend\tsrcplen\tdstplen\tforcedexp\trevstart\tflowcnt\ttranoct\trevtranoct\n");
+		fprintf(fh, "srcipv4\tdstipv4\tsrcport\tdstport\tprot\tsrcpkts\tdstpkts\tsrcoct\tdstoct\tsrcstart\tsrcend\tdststart\tdstend\tsrcplen\tdstplen\tforcedexp\trevstart\tflowcnt\ttranoct\trevtranoct\n");
 }
 
 /**
@@ -393,6 +428,7 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 	boost::shared_ptr<TemplateInfo> templateInfo;
 	switch (outputType) {
 		case LINE:
+			break;
 		case TREE:
 			templateInfo = record->templateInfo;
 			switch(templateInfo->setId) {
@@ -492,18 +528,18 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
 		char buf[100], buf2[100];
 
-		if (linesPrinted==0 || linesPrinted>50) {
-			fprintf(fh, "%22s %20s %8s %5s %21s %21s %5s %5s\n", "Flow recvd.", "Flow start", "Duratn", "Prot", "Src IP:Port", "Dst IP:Port", "Pckts", "Bytes");
+/*		if (linesPrinted==0 || linesPrinted>50) {
+			fprintf(fh, "%12s %12s %10s %8s %14s %15s %24s %19s %9s %5s\n", "Flow recvd.", "Flow start", "Duration", "Prot", "Source MAC", "Dest MAC", "Source IP:Port", "Dst IP:Port", "Pckts", "Bytes");
 			fprintf(fh, "-----------------------------------------------------------------------------------------------------------------\n");
 			linesPrinted = 0;
-		}
+		}*/
 		struct tm* tm;
 		struct timeval tv;
 		gettimeofday(&tv, 0);
 		tm = localtime(reinterpret_cast<time_t*>(&tv.tv_sec));
-		strftime(buf, ARRAY_SIZE(buf), "%F %T", tm);
+		strftime(buf, ARRAY_SIZE(buf), "%T", tm);
 		snprintf(buf2, ARRAY_SIZE(buf2), "%s.%03ld", buf, tv.tv_usec/1000);
-		fprintf(fh, "%22s ", buf2);
+		fprintf(fh, "%12s ", buf2);
 
 		uint32_t timetype = 0;
 		uint32_t starttime = 0;
@@ -513,7 +549,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 			time_t t = ntohl(*reinterpret_cast<time_t*>(record->data+fi->offset));
 			starttime = t;
 			tm = localtime(&t);
-			strftime(buf, 50, "%F %T", tm);
+			strftime(buf, 50, "%T", tm);
 		} else {
 			fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliseconds, 0);
 			if (fi != NULL) {
@@ -522,7 +558,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 				time_t t = t2/1000;
 				starttime = t;
 				tm = localtime(&t);
-				strftime(buf, 50, "%F %T", tm);
+				strftime(buf, 50, "%T", tm);
 			} else {
 				fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartSysUpTime, 0);
 				if (fi != NULL) {
@@ -534,16 +570,16 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 					if (fi != NULL) {
 						timetype = IPFIX_TYPEID_flowStartNanoseconds;
 						uint64_t t2 = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset));
-						timeval t = timentp64(u64_to_ntp64(t2));
+						timeval t = timentp64(*((ntp64*)(&t2)));
 						tm = localtime(&t.tv_sec);
-						strftime(buf, 50, "%F %T", tm);
+						strftime(buf, 50, "%T", tm);
 						starttime = t.tv_sec;
 					}
 				}
 			}
 		}
 		if (timetype != 0) {
-			fprintf(fh, "%20s ", buf);
+			fprintf(fh, "%8s ", buf);
 
 			uint32_t dur = 0;
 			switch (timetype) {
@@ -572,12 +608,12 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 					fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndNanoseconds, 0);
 					if (fi != NULL) {
 						uint64_t t2 = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset));
-						timeval t = timentp64(u64_to_ntp64(t2));
+						timeval t = timentp64(*((ntp64*)(&t2)));
 						dur = t.tv_sec*1000+t.tv_usec/1000 - starttime;
 					}
 			}
 			snprintf(buf, 50, "%u.%04u", (dur)/1000, dur%1000);
-			fprintf(fh, "%8s ", buf);
+			fprintf(fh, "%12s ", buf);
 		}
 		else {
 			fprintf(fh, "%20s %8s ", "---", "---");
@@ -589,50 +625,157 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		} else {
 			snprintf(buf, ARRAY_SIZE(buf), "---");
 		}
-		fprintf(fh, "%5s ", buf);
+		fprintf(fh, "%3s ", buf);
 
-		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Address, 0);
-		uint32_t srcip = 0;
-		if (fi != NULL && fi->type.length>=4) {
-			srcip = *reinterpret_cast<uint32_t*>(record->data+fi->offset);
+		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceMacAddress, 0);
+		if (fi != NULL) {
+			snprintf(buf, ARRAY_SIZE(buf), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
+			*reinterpret_cast<unsigned char*>(record->data),
+			*reinterpret_cast<unsigned char*>(record->data + 1),
+			*reinterpret_cast<unsigned char*>(record->data + 2),
+			*reinterpret_cast<unsigned char*>(record->data + 3),
+			*reinterpret_cast<unsigned char*>(record->data + 4),
+			*reinterpret_cast<unsigned char*>(record->data + 5)
+			);
 		}
+		else {
+			snprintf(buf, ARRAY_SIZE(buf), "---");
+		}
+		fprintf(fh, "%17s", buf);
+
+		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationMacAddress, 0);
+		if (fi != NULL) {
+			snprintf(buf, ARRAY_SIZE(buf), "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
+			*reinterpret_cast<unsigned char*>(record->data + 6),
+			*reinterpret_cast<unsigned char*>(record->data + 7),
+			*reinterpret_cast<unsigned char*>(record->data + 8),
+			*reinterpret_cast<unsigned char*>(record->data + 9),
+			*reinterpret_cast<unsigned char*>(record->data + 10),
+			*reinterpret_cast<unsigned char*>(record->data + 11)
+			);
+		}
+		else {
+			snprintf(buf, ARRAY_SIZE(buf), "%s", "---");
+		}
+		fprintf(fh, "%18s", buf);
+
+		//print source ip v4 address
+		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Address, 0);
+		uint32_t srcipv4 = 0;
+		if (fi != NULL && fi->type.length>=4) {
+			srcipv4 = *reinterpret_cast<uint32_t*>(record->data+fi->offset);
+		}
+		snprintf(buf, ARRAY_SIZE(buf), "%d.%d.%d.%d", (uint8_t)((srcipv4>>0)&0xFF), (uint8_t)((srcipv4>>8)&0xFF), (uint8_t)((srcipv4>>16)&0xFF), (uint8_t)((srcipv4>>24)&0xFF));
+		fprintf(fh, "%16s ", buf);
+
+		//print source ip v6 address
+		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv6Address, 0);
+		uint16_t srcipv6_0 = 0;
+		uint16_t srcipv6_1 = 0;
+		uint16_t srcipv6_2 = 0;
+		uint16_t srcipv6_3 = 0;
+		uint16_t srcipv6_4 = 0;
+		uint16_t srcipv6_5 = 0;
+		uint16_t srcipv6_6 = 0;
+		uint16_t srcipv6_7 = 0;
+		if (fi != NULL && fi->type.length>=4) {
+			srcipv6_0 = *reinterpret_cast<uint16_t*>(record->data+fi->offset);
+			srcipv6_1 = *reinterpret_cast<uint16_t*>(record->data+fi->offset + 2);
+			srcipv6_2 = *reinterpret_cast<uint16_t*>(record->data+fi->offset + 4);
+			srcipv6_3 = *reinterpret_cast<uint16_t*>(record->data+fi->offset + 6);
+			srcipv6_4 = *reinterpret_cast<uint16_t*>(record->data+fi->offset + 8);
+			srcipv6_5 = *reinterpret_cast<uint16_t*>(record->data+fi->offset + 10);
+			srcipv6_6 = *reinterpret_cast<uint16_t*>(record->data+fi->offset + 12);
+			srcipv6_7 = *reinterpret_cast<uint16_t*>(record->data+fi->offset + 14);
+		}
+		reverse(&srcipv6_0);
+		reverse(&srcipv6_1);
+		reverse(&srcipv6_2);
+		reverse(&srcipv6_3);
+		reverse(&srcipv6_4);
+		reverse(&srcipv6_5);
+		reverse(&srcipv6_6);
+		reverse(&srcipv6_7);
+		snprintf(buf, ARRAY_SIZE(buf), "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x", srcipv6_0, srcipv6_1, srcipv6_2, srcipv6_3, srcipv6_4, srcipv6_5, srcipv6_6, srcipv6_7);
+		fprintf(fh, "%26s ", buf);
+
+		//print src transport port
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceTransportPort, 0);
 		uint16_t srcport = 0;
 		if (fi != NULL && fi->type.length==2) {
 			srcport = ntohs(*reinterpret_cast<uint16_t*>(record->data+fi->offset));
 		}
-		snprintf(buf, ARRAY_SIZE(buf), "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8 ":%" PRIu16, (uint8_t)((srcip>>0)&0xFF), (uint8_t)((srcip>>8)&0xFF), (uint8_t)((srcip>>16)&0xFF), (uint8_t)((srcip>>24)&0xFF), srcport);
-		fprintf(fh, "%21s ", buf);
+		snprintf(buf, ARRAY_SIZE(buf), "%" PRIu16, srcport);
+		fprintf(fh, "%5s ", buf);
 
+		//print dest ip v4 address
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Address, 0);
-		uint32_t dstip = 0;
+		uint32_t dstipv4 = 0;
 		if (fi != NULL && fi->type.length>=4) {
-			dstip = *reinterpret_cast<uint32_t*>(record->data+fi->offset);
+			dstipv4 = *reinterpret_cast<uint32_t*>(record->data+fi->offset);
 		}
+		snprintf(buf, ARRAY_SIZE(buf), "%d.%d.%d.%d", (uint8_t)((dstipv4>>0)&0xFF), (uint8_t)((dstipv4>>8)&0xFF), (uint8_t)((dstipv4>>16)&0xFF), (uint8_t)((dstipv4>>24)&0xFF));
+		fprintf(fh, "%15s ", buf);
+
+		//print dest ip v6 address
+		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv6Address, 0);
+		uint16_t dstipv6_0 = 0;
+		uint16_t dstipv6_1 = 0;
+		uint16_t dstipv6_2 = 0;
+		uint16_t dstipv6_3 = 0;
+		uint16_t dstipv6_4 = 0;
+		uint16_t dstipv6_5 = 0;
+		uint16_t dstipv6_6 = 0;
+		uint16_t dstipv6_7 = 0;
+		if (fi != NULL && fi->type.length>=4) {
+			dstipv6_0 = *reinterpret_cast<uint16_t*>(record->data+fi->offset);
+			dstipv6_1 = *reinterpret_cast<uint16_t*>(record->data+fi->offset + 2);
+			dstipv6_2 = *reinterpret_cast<uint16_t*>(record->data+fi->offset + 4);
+			dstipv6_3 = *reinterpret_cast<uint16_t*>(record->data+fi->offset + 6);
+			dstipv6_4 = *reinterpret_cast<uint16_t*>(record->data+fi->offset + 8);
+			dstipv6_5 = *reinterpret_cast<uint16_t*>(record->data+fi->offset + 10);
+			dstipv6_6 = *reinterpret_cast<uint16_t*>(record->data+fi->offset + 12);
+			dstipv6_7 = *reinterpret_cast<uint16_t*>(record->data+fi->offset + 14);
+		}
+		reverse(&dstipv6_0);
+		reverse(&dstipv6_1);
+		reverse(&dstipv6_2);
+		reverse(&dstipv6_3);
+		reverse(&dstipv6_4);
+		reverse(&dstipv6_5);
+		reverse(&dstipv6_6);
+		reverse(&dstipv6_7);
+		snprintf(buf, ARRAY_SIZE(buf), "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x", dstipv6_0, dstipv6_1, dstipv6_2, dstipv6_3, dstipv6_4, dstipv6_5, dstipv6_6, dstipv6_7);
+		fprintf(fh, "%26s ", buf);
+
+		//print destination transport port
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationTransportPort, 0);
 		uint16_t dstport = 0;
 		if (fi != NULL && fi->type.length==2) {
 			dstport = ntohs(*reinterpret_cast<uint16_t*>(record->data+fi->offset));
 		}
-		snprintf(buf, ARRAY_SIZE(buf), "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8 ":%" PRIu16, (uint8_t)((dstip>>0)&0xFF), (uint8_t)((dstip>>8)&0xFF), (uint8_t)((dstip>>16)&0xFF), (uint8_t)((dstip>>24)&0xFF), dstport);
-		fprintf(fh, "%21s ", buf);
+		snprintf(buf, ARRAY_SIZE(buf), "%" PRIu16, dstport);
+		fprintf(fh, "%5s ", buf);
 
+		//print packet count
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_packetDeltaCount, 0);
 		if (fi != NULL) {
 			printUint(buf, fi->type, record->data+fi->offset);
 		} else {
 			snprintf(buf, ARRAY_SIZE(buf), "---");
 		}
-		fprintf(fh, "%5s ", buf);
+		fprintf(fh, "%4s ", buf);
 
+		//print octet count
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_octetDeltaCount, 0);
 		if (fi != NULL) {
 			printUint(buf, fi->type, record->data+fi->offset);
 		} else {
 			snprintf(buf, ARRAY_SIZE(buf), "---");
 		}
-		fprintf(fh, "%5s \n", buf);
-		linesPrinted++;
+		fprintf(fh, "%7s \n", buf);
+
+		//linesPrinted++;
 }
 
 /**
