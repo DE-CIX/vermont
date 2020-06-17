@@ -1,4 +1,22 @@
-# VERMONT - VERsatile MONitoring Tool
+
+
+
+# VERMONT - VERsatile MONitoring Tool DE-CIX Branch
+
+This is the DE-CIX branch of vermont, the tool used as back end for the IPFIX Export
+
+The changes applied to this branch include:
+ * IPv6 capability
+   * when generating IPFIX data
+   * storing to files
+   * reading from files
+   * printing them to stdout)
+ * MAC Address capability
+   * parsing from suitable flow sets
+   * filtering flows
+   * generting new flows
+
+The rest of the project is untouched.
 
 [![Build Status](https://travis-ci.org/tumi8/vermont.svg?branch=master)](https://travis-ci.org/tumi8/vermont)
 
