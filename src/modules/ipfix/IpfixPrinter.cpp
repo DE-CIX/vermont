@@ -535,11 +535,11 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		}*/
 		struct tm* tm;
 		struct timeval tv;
-		gettimeofday(&tv, 0);
+/*		gettimeofday(&tv, 0);
 		tm = localtime(reinterpret_cast<time_t*>(&tv.tv_sec));
 		strftime(buf, ARRAY_SIZE(buf), "%T", tm);
 		snprintf(buf2, ARRAY_SIZE(buf2), "%s.%03ld", buf, tv.tv_usec/1000);
-		fprintf(fh, "%12s ", buf2);
+		fprintf(fh, "%12s ", buf2);*/
 
 		uint32_t timetype = 0;
 		uint32_t starttime = 0;
@@ -549,7 +549,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 			time_t t = ntohl(*reinterpret_cast<time_t*>(record->data+fi->offset));
 			starttime = t;
 			tm = localtime(&t);
-			strftime(buf, 50, "%T", tm);
+			//strftime(buf, 50, "%T", tm);
 		} else {
 			fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliseconds, 0);
 			if (fi != NULL) {
@@ -558,8 +558,8 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 				time_t t = t2/1000;
 				starttime = t;
 				tm = localtime(&t);
-				strftime(buf, 50, "%T", tm);
-			} else {
+				strftime(buf, 50, "\n%T", tm);
+			}/* else {
 				fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartSysUpTime, 0);
 				if (fi != NULL) {
 					timetype = IPFIX_TYPEID_flowStartSysUpTime;
@@ -576,11 +576,11 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 						starttime = t.tv_sec;
 					}
 				}
-			}
+			}*/
 		}
 		if (timetype != 0) {
-			fprintf(fh, "%8s ", buf);
-
+			fprintf(fh, "%7s ", buf);
+			memset(buf, 0, ARRAY_SIZE(buf));
 			uint32_t dur = 0;
 			switch (timetype) {
 				case IPFIX_TYPEID_flowStartSeconds:
@@ -593,8 +593,12 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 				case IPFIX_TYPEID_flowStartMilliseconds:
 					fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliseconds, 0);
 					if (fi != NULL) {
-						dur = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset)) - starttime;
-						dur *= 1000;
+						//dur = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset)) - starttime;
+						//dur *= 1000;
+						uint64_t t2 = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset));
+						time_t t = t2/1000;
+						tm = localtime(&t);
+						strftime(buf, 50, "%T", tm);
 					}
 					break;
 				case IPFIX_TYPEID_flowStartSysUpTime:
@@ -612,8 +616,8 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 						dur = t.tv_sec*1000+t.tv_usec/1000 - starttime;
 					}
 			}
-			snprintf(buf, 50, "%u.%04u", (dur)/1000, dur%1000);
-			fprintf(fh, "%12s ", buf);
+			//snprintf(buf, 50, "%u.%04u", (dur)/1000, dur%1000);
+			fprintf(fh, "%7s ", buf);
 		}
 		else {
 			fprintf(fh, "%20s %8s ", "---", "---");
@@ -773,9 +777,10 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		} else {
 			snprintf(buf, ARRAY_SIZE(buf), "---");
 		}
-		fprintf(fh, "%7s \n", buf);
-
-		//linesPrinted++;
+		fprintf(fh, "%7s", buf);
+		fflush(fh);
+		memset(buf, 0, ARRAY_SIZE(buf));
+		usleep(2500);
 }
 
 /**
@@ -873,5 +878,3 @@ void IpfixPrinter::onDataRecord(IpfixDataRecord* record)
 
 	record->removeReference();
 }
-
-

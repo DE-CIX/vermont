@@ -6,7 +6,7 @@
 
 	<ipfixCollector id="3">
 		<listener>
-			<ipAddress>12.16.50.101</ipAddress>
+			<ipAddress>127.0.0.1</ipAddress>
 			<transportProtocol>UDP</transportProtocol>
 			<port>2055</port>
 		</listener>

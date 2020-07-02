@@ -335,14 +335,14 @@ int main(int ac, char **dc)
 		THROWEXCEPTION("failed to setup semaphore");
 	}
 
-	msg(MSG_DIALOG, "starting up vermont config manager");
+	//msg(MSG_DIALOG, "starting up vermont config manager");
 
 	manager->parseConfig(string(parameters.config_file));
 
 	sigset_t sigmask;
 	sigemptyset(&sigmask);
 
-	msg(MSG_DIALOG, "vermont is up and running");
+	//msg(MSG_DIALOG, "vermont is up and running");
 
 	while (run_program) {
 		// sleep until we get a signal
@@ -359,10 +359,10 @@ int main(int ac, char **dc)
 			reload_config = false;
 		}
 	}
-	msg(MSG_FATAL, "got signal - shutting down manager");
+	//msg(MSG_FATAL, "got signal - shutting down manager");
 	manager->shutdown();
 	delete manager;
-	msg(MSG_FATAL, "manager shutdown complete");
+	//msg(MSG_FATAL, "manager shutdown complete");
 
 	msg_shutdown();
 }
