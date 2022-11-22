@@ -342,6 +342,26 @@ int parseTcpFlags(char* s, IpfixRecord::Data** fdata, InformationElement::IeLeng
 	return 0;
 }
 
+
+/**
+ * parses the given string
+ * @return 0 if successful
+ */
+int parseVRFIDPattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length) {
+
+	uint32_t vrfid;
+
+	vrfid = static_cast<uint32_t>(std::stoul(s));
+
+	*length = 4;
+	
+	*fdata = (IpfixRecord::Data*) malloc (sizeof(uint32_t) * 4);
+
+	memcpy(fdata, &vrfid, 4);
+
+	return 0;
+}
+
 /**
  * De-allocates memory used by rules.
  * This will NOT destroy hashtables associated with individual rules

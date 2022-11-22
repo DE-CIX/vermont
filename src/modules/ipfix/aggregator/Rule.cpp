@@ -251,6 +251,16 @@ int matchesSourceMacAddressPattern(const InformationElement::IeInfo* dataType, c
 
 
 /**
+ * Checks if an incoming VRFID field matches a configured filter
+ * @return 1 if VRFID fields match
+ */
+int matchesVRFIDPattern(const InformationElement::IeInfo* dataType, const IpfixRecord::Data* data, const InformationElement::IeInfo* patternType, const IpfixRecord::Data* pattern) {
+	uint32_t data_uint = ntohl(*(uint32_t*) data);
+	return (!memcmp(&data_uint, &pattern, 4));
+}
+
+
+/**
  * Checks if a given Field matches a Pattern when compared byte for byte
  * @c return 1 if field matches
  */
@@ -305,6 +315,10 @@ int matchesPattern(const InformationElement::IeInfo* dataType, const IpfixRecord
 	case IPFIX_TYPEID_sourceTransportPort:
 	case IPFIX_TYPEID_destinationTransportPort:
 		return matchesPortPattern(dataType, data, patternType, pattern);
+		break;
+	case IPFIX_TYPEID_ingressVRFID:
+	case IPFIX_TYPEID_egressVRFID:
+		return matchesVRFIDPattern(dataType, data, patternType, pattern);
 		break;
 	default:
 		return matchesRawPattern(dataType, data, patternType, pattern);

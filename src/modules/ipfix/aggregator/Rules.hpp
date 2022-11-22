@@ -50,5 +50,7 @@ int parseMacAddressPattern(char* s, IpfixRecord::Data** fdata, InformationElemen
 int parseIPv4Pattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length);
 int parsePortPattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length);
 int parseTcpFlags(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length);
+int parseVRFIDPattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length);
+
 
 #endif

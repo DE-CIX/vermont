@@ -194,6 +194,14 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 					throw std::exception();
 				}
 				break;
+			case IPFIX_TYPEID_ingressVRFID:
+			case IPFIX_TYPEID_egressVRFID:
+				if (parseVRFIDPattern(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
+					msg(MSG_ERROR, "Bad VRFID pattern \"%s\"", tmp);
+					delete [] tmp;
+					throw std::exception();
+				}
+				break;
 			case IPFIX_TYPEID_sourceTransportPort:
 			case IPFIX_TYPEID_udpSourcePort:
 			case IPFIX_TYPEID_tcpSourcePort:
@@ -215,7 +223,7 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 				break;
 
 			default:
-				msg(MSG_ERROR, "Fields of type \"%s\" cannot be matched against a pattern %s", "", tmp);
+				msg(MSG_ERROR, "A Fields of type \"%d\" cannot be matched against a pattern %s", ruleField->type.id, tmp);
 				delete tmp;
 				throw std::exception();
 				break;

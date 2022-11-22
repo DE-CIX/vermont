@@ -526,15 +526,15 @@ void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 {
 	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
-		char buf[100], buf2[100];
+		char buf[100];
 
-/*		if (linesPrinted==0 || linesPrinted>50) {
-			fprintf(fh, "%12s %12s %10s %8s %14s %15s %24s %19s %9s %5s\n", "Flow recvd.", "Flow start", "Duration", "Prot", "Source MAC", "Dest MAC", "Source IP:Port", "Dst IP:Port", "Pckts", "Bytes");
-			fprintf(fh, "-----------------------------------------------------------------------------------------------------------------\n");
-			linesPrinted = 0;
-		}*/
+		if (linesPrinted == 0 || linesPrinted > 50) {
+			fprintf(fh, "\n%11s %8s %14s %15s %24s %19s %12s %12s %12s %6s\n", "Flow recvd.", "Prot", "Source MAC", "Dest MAC", "Source IP:Port", "Dst IP:Port", "Pckts", "Bytes", "In VRFID", "Out VRFID");
+			fprintf(fh, "----------------------------------------------------------------------------------------------------------------------------------------\n");
+			linesPrinted = linesPrinted + 1;
+		}
 		struct tm* tm;
-		struct timeval tv;
+		//struct timeval tv;
 /*		gettimeofday(&tv, 0);
 		tm = localtime(reinterpret_cast<time_t*>(&tv.tv_sec));
 		strftime(buf, ARRAY_SIZE(buf), "%T", tm);
@@ -700,8 +700,8 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		reverse(&srcipv6_5);
 		reverse(&srcipv6_6);
 		reverse(&srcipv6_7);
-		snprintf(buf, ARRAY_SIZE(buf), "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x", srcipv6_0, srcipv6_1, srcipv6_2, srcipv6_3, srcipv6_4, srcipv6_5, srcipv6_6, srcipv6_7);
-		fprintf(fh, "%26s ", buf);
+//		snprintf(buf, ARRAY_SIZE(buf), "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x", srcipv6_0, srcipv6_1, srcipv6_2, srcipv6_3, srcipv6_4, srcipv6_5, srcipv6_6, srcipv6_7);
+//		fprintf(fh, "%26s ", buf);
 
 		//print src transport port
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceTransportPort, 0);
@@ -749,8 +749,8 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		reverse(&dstipv6_5);
 		reverse(&dstipv6_6);
 		reverse(&dstipv6_7);
-		snprintf(buf, ARRAY_SIZE(buf), "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x", dstipv6_0, dstipv6_1, dstipv6_2, dstipv6_3, dstipv6_4, dstipv6_5, dstipv6_6, dstipv6_7);
-		fprintf(fh, "%26s ", buf);
+//		snprintf(buf, ARRAY_SIZE(buf), "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x", dstipv6_0, dstipv6_1, dstipv6_2, dstipv6_3, dstipv6_4, dstipv6_5, dstipv6_6, dstipv6_7);
+//		fprintf(fh, "%26s ", buf);
 
 		//print destination transport port
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationTransportPort, 0);
@@ -768,7 +768,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		} else {
 			snprintf(buf, ARRAY_SIZE(buf), "---");
 		}
-		fprintf(fh, "%4s ", buf);
+		fprintf(fh, "%6s ", buf);
 
 		//print octet count
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_octetDeltaCount, 0);
@@ -777,7 +777,30 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		} else {
 			snprintf(buf, ARRAY_SIZE(buf), "---");
 		}
-		fprintf(fh, "%7s", buf);
+		fprintf(fh, "%12s", buf);
+
+		//print VRFID ingress field
+		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_ingressVRFID, 0);
+		if (fi != NULL) {
+			printUint(buf, fi->type, record->data+fi->offset);
+		} else {
+			snprintf(buf, ARRAY_SIZE(buf), "---");
+		}
+		fprintf(fh, "%12s", buf);
+
+
+		//print VRFID egress field
+		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_egressVRFID, 0);
+		if (fi != NULL) {
+			printUint(buf, fi->type, record->data+fi->offset);
+		} else {
+			snprintf(buf, ARRAY_SIZE(buf), "---");
+		}
+		fprintf(fh, "%12s", buf);
+
+
+
+
 		fflush(fh);
 		memset(buf, 0, ARRAY_SIZE(buf));
 		usleep(2500);
